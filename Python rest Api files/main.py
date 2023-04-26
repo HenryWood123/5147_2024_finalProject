@@ -16,6 +16,14 @@ db = firestore.client()
 app = Flask(__name__)
 @functions_framework.http
 
+@app.after_request
+def add_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS, PATCH')
+    return response
+
+
 @app.route('/')
 def entry():
     return f"Welcome to this app"
@@ -27,19 +35,18 @@ def create_user():
     user_id = data['user_id']
     user_name = data['user_name']
     email = data['email']
-    DOB_str = data['DOB']
+    DOB = data['DOB']
     year_group = data['year_group']
     major = data['major']
     onCampus = data['onCampus']
     favorite_food = data['favorite_food']
     favorite_movie = data['favorite_movie']
 
-    DOB = datetime.strptime(DOB_str, '%d/%m/%Y').date().isoformat()
 
     users_ref = db.collection('Users').document(user_id)
 
     if users_ref.get().exists:
-        return f"{user_id} already exists", 400
+        return f"{user_id} already exists"
 
     user_data = {
         'user_id': user_id,
@@ -55,7 +62,7 @@ def create_user():
 
     users_ref.set(user_data)
 
-    return jsonify(user_data)
+    return jsonify(user_data), 201
 
 
 @app.route('/users/<user_id>', methods=['GET'])
@@ -91,7 +98,7 @@ def edit_user(user_id):
         users_ref.update(user_data)
 
         updated_doc = users_ref.get()
-        return jsonify(updated_doc)
+        return jsonify(updated_doc), 200
     else:
         return f"No such document with ID {user_id}"
 
